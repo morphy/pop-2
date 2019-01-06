@@ -7,3 +7,5 @@ cp 2 8
 re 2
 wr 9
 end
+jum 100 2
+con 2 123

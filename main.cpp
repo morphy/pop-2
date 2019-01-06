@@ -131,7 +131,7 @@ bool vm::compile(string filename)
         /* Compile */
 
         string command;
-        int r1, r2;
+        int r1, r2, number;
         unsigned short buffer;
 
         while(file_vm >> command)
@@ -158,6 +158,8 @@ bool vm::compile(string filename)
               file_vm >> r1 >> r2;
             }
 
+            /* Write numbers to buffer */
+
             buffer = 0;
             buffer += r2;
             buffer <<= 6;
@@ -176,21 +178,51 @@ bool vm::compile(string filename)
             if(command == "wr") buffer += 9;
             if(command == "end") buffer += 10;
 
-            /* Write to file */
-
             cout << dec2bin(buffer) << endl;
 
-            buffer = reverse(buffer);
+            /* Write to file */
 
             file_bin.write((char*)(&buffer), 2);
           }
           else if(command == "jum")
           {
-            cout << endl << "hello there" << endl;
+            file_vm >> number >> r1;
+            r2 = 0;
+
+            buffer = 0;
+            buffer += r2;
+            buffer <<= 6;
+            buffer += r1;
+            buffer <<= 4;
+
+            /* Command number */
+
+            buffer += 6;
+
+            /* Write to file */
+
+            file_bin.write((char*)(&buffer), 2);
+            file_bin.write((char*)(&number), 4);
           }
           else if(command == "con")
           {
-            cout << endl << "hello there" << endl;
+            file_vm >> r1 >> number;
+            r2 = 0;
+
+            buffer = 0;
+            buffer += r2;
+            buffer <<= 6;
+            buffer += r1;
+            buffer <<= 4;
+
+            /* Command number */
+
+            buffer += 7;
+
+            /* Write to file */
+
+            file_bin.write((char*)(&buffer), 2);
+            file_bin.write((char*)(&number), 4);
           }
         }
 
@@ -233,6 +265,8 @@ int main()
   /* Start vm */
 
   vm machine;
+
+  /* Get user input */
 
   while(true)
   {
