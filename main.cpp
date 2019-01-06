@@ -26,6 +26,15 @@ void help()
   cout << " ? - display help" << endl;
 }
 
+unsigned short reverse(unsigned short x)
+{
+  unsigned short tmp;
+  tmp = x << 8;
+  x >>= 8;
+  x += tmp;
+  return x;
+}
+
 string dec2bin(int x)
 {
   string res;
@@ -123,76 +132,65 @@ bool vm::compile(string filename)
 
         string command;
         int r1, r2;
-        unsigned int buffer;
+        unsigned short buffer;
 
         while(file_vm >> command)
         {
-          if(command == "add")
+          /* We have only 2 unusual commands - jum and con */
+
+          if ((command != "jum") && (command !="con"))
           {
-            file_vm >> r1 >> r2;
-            cout << "add " << dec2bin(r1) << " " << r2 << endl;
+            /* For the wr and re command we need only one address */
+            /* For the end command we don't need any addresses */
+
+            if((command == "wr") || (command == "re"))
+            {
+              file_vm >> r1;
+              r2 = 0;
+            }
+            else if(command == "end")
+            {
+              r1 = 0;
+              r2 = 0;
+            }
+            else
+            {
+              file_vm >> r1 >> r2;
+            }
 
             buffer = 0;
             buffer += r2;
             buffer <<= 6;
             buffer += r1;
             buffer <<= 4;
-            buffer += 0;
-            
+
+            /* Command number */
+
+            if(command == "add") buffer += 0;
+            if(command == "sub") buffer += 1;
+            if(command == "mul") buffer += 2;
+            if(command == "div") buffer += 3;
+            if(command == "com") buffer += 4;
+            if(command == "cp") buffer += 5;
+            if(command == "re") buffer += 8;
+            if(command == "wr") buffer += 9;
+            if(command == "end") buffer += 10;
+
+            /* Write to file */
+
+            cout << dec2bin(buffer) << endl;
+
+            buffer = reverse(buffer);
+
             file_bin.write((char*)(&buffer), 2);
-          }
-          else if(command == "sub")
-          {
-            file_vm >> r1 >> r2;
-            cout << "sub " << r1 << " " << r2 << endl;
-          }
-          else if(command == "mul")
-          {
-            file_vm >> r1 >> r2;
-            cout << "mul " << r1 << " " << r2 << endl;
-          }
-          else if(command == "div")
-          {
-            file_vm >> r1 >> r2;
-            cout << "div " << r1 << " " << r2 << endl;
-          }
-          else if(command == "com")
-          {
-            file_vm >> r1 >> r2;
-            cout << "com " << r1 << " " << r2 << endl;
-          }
-          else if(command == "cp")
-          {
-            file_vm >> r1 >> r2;
-            cout << "cp " << r1 << " " << r2 << endl;
           }
           else if(command == "jum")
           {
-            file_vm >> r1;
-            cout << "jum " << r1 << endl;
+            cout << endl << "hello there" << endl;
           }
           else if(command == "con")
           {
-            file_vm >> r1;
-            cout << "con " << r1 << endl;
-          }
-          else if(command == "re")
-          {
-            file_vm >> r1 >> r2;
-            cout << "re " << r1 << " " << r2 << endl;
-          }
-          else if(command == "wr")
-          {
-            file_vm >> r1 >> r2;
-            cout << "wr " << r1 << " " << r2 << endl;
-          }
-          else if(command == "end")
-          {
-            cout << "end " << r1 << " " << r2 << endl;
-          }
-          else
-          {
-            cout << "unknown command" << endl;
+            cout << endl << "hello there" << endl;
           }
         }
 
@@ -219,20 +217,6 @@ bool vm::compile(string filename)
     return false;
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 int main()
 {

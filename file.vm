@@ -1,5 +1,9 @@
-add 1 62
-add 13 23
-add 1 26
-add 32 56
-add 36 62
+add 12 45
+sub 8 5
+mul 10 9
+div 1 4
+com 8 7
+cp 2 8
+re 2
+wr 9
+end
