@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <fstream>
+#include <vector>
 //#include <windows.h>
 
 using namespace std;
@@ -8,7 +9,6 @@ using namespace std;
 void welcome()
 {
   cout << "MW Virtual Machine v1.0" << endl << endl;
-  cout << "Type '?' to display help" << endl;
 }
 
 void clear()
@@ -22,8 +22,8 @@ void help()
   cout << "MW Virtual Machine v1.0" << endl << endl;
   cout << " ? - display help" << endl;
   cout << " c xxx.vm - compile xxx.vm file" << endl;
-  cout << " ? - display help" << endl;
-  cout << " ? - display help" << endl;
+  cout << " cl - clear screen" << endl;
+  cout << " e xxx.bin - execute xxx.bin file" << endl;
 }
 
 unsigned short reverse(unsigned short x)
@@ -77,9 +77,15 @@ class vm
   private:
     /* Registers */
 
-    int memory[63];
+    int memory[64];
     int command;
     char flag;
+
+    /* Binary file data */
+
+    bool is_compiled;
+    string binary;
+    int size;
 
   public:
     vm()
@@ -91,9 +97,11 @@ class vm
 
       command = 0;
       flag = 0;
+      is_compiled = false;
     }
 
     bool compile(string filename);
+    bool execute(string filename);
 };
 
 bool vm::compile(string filename)
@@ -131,8 +139,10 @@ bool vm::compile(string filename)
         /* Compile */
 
         string command;
-        int r1, r2, number;
+        int r1, r2, number, bytes, s;
         unsigned short buffer;
+
+        bytes = 0;
 
         while(file_vm >> command)
         {
@@ -178,11 +188,10 @@ bool vm::compile(string filename)
             if(command == "wr") buffer += 9;
             if(command == "end") buffer += 10;
 
-            cout << dec2bin(buffer) << endl;
-
             /* Write to file */
 
             file_bin.write((char*)(&buffer), 2);
+            bytes += 2;
           }
           else if(command == "jum")
           {
@@ -203,6 +212,7 @@ bool vm::compile(string filename)
 
             file_bin.write((char*)(&buffer), 2);
             file_bin.write((char*)(&number), 4);
+            bytes += 6;
           }
           else if(command == "con")
           {
@@ -223,10 +233,29 @@ bool vm::compile(string filename)
 
             file_bin.write((char*)(&buffer), 2);
             file_bin.write((char*)(&number), 4);
+            bytes += 6;
           }
         }
 
+        cout << "Compiled" << endl << bytes << " bytes written to " << filename_bin << endl;
+
+        /* Check size */
+
+        file_bin.seekg(0, ios::end);
+        s = file_bin.tellg();
+
+        /* That warning should never be emitted, but it's better to know if it would */
+
+        if(s != bytes)
+        {
+          cout << "Warning: File compled, but sizes are not " << endl;
+        }
+
+        file_bin.seekg(0);
         file_bin.close();
+        vm::binary = filename_bin;
+        vm::is_compiled = true;
+        vm::size = s;
         return true;
       }
       else
@@ -250,12 +279,70 @@ bool vm::compile(string filename)
   }
 }
 
+bool vm::execute(string filename)
+{
+  /* Check if .bin file */
+
+  int l = filename.length();
+  string ext = "0000";
+
+  ext[0] = filename[l-4];
+  ext[1] = filename[l-3];
+  ext[2] = filename[l-2];
+  ext[3] = filename[l-1];
+
+  if(ext == ".bin")
+  {
+    /* Try to open file */
+
+    fstream file;
+
+    file.open(filename.c_str(), ios::in | ios::binary);
+
+    if(file.good())
+    {
+      /* Read data */
+
+      vector <int> commands;
+      int buffer, size;
+
+      size = vm::size;
+
+      for(int i=0; i<size; i+=2)
+      {
+        file.read((char*) &buffer, 2);
+        file.seekg(i);
+        commands.push_back(buffer);
+      }
+
+
+
+
+
+
+
+
+      file.close();
+      return true;
+    }
+    else
+    {
+      cout << "Can not access binary " << filename << endl;
+      return false;
+    }
+  }
+  else
+  {
+    cout << "Please provide a valid, .bin format file" << endl;
+    return false;
+  }
+}
+
 int main()
 {
   /* Declare variables */
 
-  char cmd;
-  string name,x;
+  string name, x, cmd;
 
   /* Display welcome message */
 
@@ -273,29 +360,35 @@ int main()
     cout << endl;
     cin >> cmd;
 
-    if(cmd == '?')
+    if(cmd == "?")
     {
       clear();
       help();
     }
-
-    if(cmd == 'q')
+    else if(cmd == "q")
     {
       return 0;
     }
-
-    if(cmd == 'c')
+    else if(cmd == "cl")
+    {
+      clear();
+      welcome();
+    }
+    else if(cmd == "e")
     {
       cin >> name;
 
-      if(machine.compile(name))
-      {
-        cout << "Compiled";
-      }
-      else
-      {
-        cout << "Compilation failed";
-      }
+      machine.execute(name);
+    }
+    else if(cmd == "c")
+    {
+      cin >> name;
+
+      machine.compile(name);
+    }
+    else
+    {
+      cout << "Unknown command, type ? to display help";
     }
   }
 
