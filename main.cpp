@@ -81,12 +81,6 @@ class vm
     int command;
     char flag;
 
-    /* Binary file data */
-
-    bool is_compiled;
-    string binary;
-    int size;
-
   public:
     vm()
     {
@@ -97,7 +91,6 @@ class vm
 
       command = 0;
       flag = 0;
-      is_compiled = false;
     }
 
     bool compile(string filename);
@@ -253,9 +246,6 @@ bool vm::compile(string filename)
 
         file_bin.seekg(0);
         file_bin.close();
-        vm::binary = filename_bin;
-        vm::is_compiled = true;
-        vm::size = s;
         return true;
       }
       else
@@ -305,14 +295,33 @@ bool vm::execute(string filename)
 
       vector <int> commands;
       int buffer, size;
+      int r1, r2, cmd;
 
-      size = vm::size;
+      file.seekg(0, ios::end);
+      size = file.tellg();
+      file.seekg(0);
 
       for(int i=0; i<size; i+=2)
       {
-        file.read((char*) &buffer, 2);
         file.seekg(i);
+        file.read((char*) &buffer, 2);
         commands.push_back(buffer);
+        cout << i << endl;
+      }
+
+      /*for(int i=0; i<size; i++)
+      {
+        cmd = commands[i] & 15; // 15 = 0b1111
+        r1 = (commands[i] & 1008) >> 4; // 1008 = 0b1111110000
+        r2 = (commands[i] & 64512) >> 10; // 64512 = 0b1111110000000000
+        cout << i << " - " << cmd << " " << r1 << " " << r2 << endl;
+      }*/
+
+      cout << endl << endl << endl;
+
+      for(int i=0; i<(size/2); i++)
+      {
+        cout << i << " - " << commands[i] << endl;
       }
 
 
