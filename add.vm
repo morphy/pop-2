@@ -1,0 +1,7 @@
+re 0
+com 0 2
+jum 2 2
+end
+add 1 0
+wr 1
+jum -6 0

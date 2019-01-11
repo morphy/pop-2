@@ -74,28 +74,55 @@ string dec2bin(int x, int l)
 
 class vm
 {
+  struct c
+  {
+    int r1, r2, op;
+  };
+
   private:
     /* Registers */
 
     int memory[64];
-    int command;
+    int line;
     char flag;
 
   public:
     vm()
+    {
+      reset();
+    }
+
+    void reset()
     {
       for(int i=0; i<64; i++)
       {
         memory[i] = 0;
       }
 
-      command = 0;
-      flag = 0;
+      line = 0;
+      flag = 'Z';
     }
 
     bool compile(string filename);
     bool execute(string filename);
+    char getflag(int x);
 };
+
+char vm::getflag(int x)
+{
+  if(x == 0)
+  {
+    return 'Z';
+  }
+  else if(x > 0)
+  {
+    return 'D';
+  }
+  else if(x < 0)
+  {
+    return 'U';
+  }
+}
 
 bool vm::compile(string filename)
 {
@@ -271,6 +298,10 @@ bool vm::compile(string filename)
 
 bool vm::execute(string filename)
 {
+  /* Reset the VM */
+
+  this->reset();
+
   /* Check if .bin file */
 
   int l = filename.length();
@@ -293,43 +324,154 @@ bool vm::execute(string filename)
     {
       /* Read data */
 
-      vector <int> commands;
+      vector <c> commands;
+      c tmp;
       int buffer, size;
-      int r1, r2, cmd;
+      int r1, r2, op;
 
       file.seekg(0, ios::end);
       size = file.tellg();
       file.seekg(0);
 
+      /* Rewrite table */
+
       for(int i=0; i<size; i+=2)
       {
         file.seekg(i);
         file.read((char*) &buffer, 2);
-        commands.push_back(buffer);
-        cout << i << endl;
+
+        tmp.op = buffer & 15; // 15 = 0b1111
+        tmp.r1 = (buffer & 1008) >> 4; // 1008 = 0b1111110000
+        tmp.r2 = (buffer & 64512) >> 10; // 64512 = 0b1111110000000000
+
+        if((tmp.op == 6) || (tmp.op == 7))
+        {
+          i+=2;
+          file.seekg(i);
+          file.read((char*) &buffer, 4);
+          i+=2;
+          tmp.r2 = buffer;
+        }
+
+        commands.push_back(tmp);
       }
 
-      /*for(int i=0; i<size; i++)
-      {
-        cmd = commands[i] & 15; // 15 = 0b1111
-        r1 = (commands[i] & 1008) >> 4; // 1008 = 0b1111110000
-        r2 = (commands[i] & 64512) >> 10; // 64512 = 0b1111110000000000
-        cout << i << " - " << cmd << " " << r1 << " " << r2 << endl;
-      }*/
+      /* Execute */
 
-      cout << endl << endl << endl;
-
-      for(int i=0; i<(size/2); i++)
+      for(int i=0; i<commands.size(); i++)
       {
-        cout << i << " - " << commands[i] << endl;
+        r1 = commands[i].r1;
+        r2 = commands[i].r2;
+        op = commands[i].op;
+
+        if(op == 0)
+        {
+          memory[r1] += memory[r2];
+          flag = getflag(memory[r1]);
+          line++;
+        }
+        else if(op == 1)
+        {
+          memory[r1] -= memory[r2];
+          flag = getflag(memory[r1]);
+          line++;
+        }
+        else if(op == 2)
+        {
+          memory[r1] *= memory[r2];
+          flag = getflag(memory[r1]);
+          line++;
+        }
+        else if(op == 3)
+        {
+          if(memory[r2] != 0)
+          {
+            memory[r1] /= memory[r2];
+            memory[r2] = memory[r1] % memory[r2];
+            flag = getflag(memory[commands[i].r1]);
+            line++;
+          }
+          else
+          {
+            cout << "Division by zero detected" << endl << "Execution terminated";
+            return false;
+          }
+        }
+        else if(op == 4)
+        {
+          flag = getflag(memory[r1] - memory[r2]);
+          line++;
+        }
+        else if(op == 5)
+        {
+          memory[r1] = memory[r2];
+          line++;
+        }
+        else if(op == 6)
+        {
+          if(r1 == 0)
+          {
+            line += r2;
+            i = line - 1;
+          }
+          else if((r1 == 1) && (flag == 'Z'))
+          {
+            line += r2;
+            i = line - 1;
+          }
+          else if((r1 == 2) && (flag != 'Z'))
+          {
+            line += r2;
+            i = line - 1;
+          }
+          else if((r1 == 3) && (flag == 'D'))
+          {
+            line += r2;
+            i = line - 1;
+          }
+          else if((r1 == 4) && (flag == 'U'))
+          {
+            line += r2;
+            i = line - 1;
+          }
+          else if((r1 == 5) && ((flag == 'D') || (flag == 'Z')))
+          {
+            line += r2;
+            i = line - 1;
+          }
+          else if((r1 == 6) && ((flag == 'U') || (flag == 'Z')))
+          {
+            line += r2;
+            i = line - 1;
+          }
+          else
+          {
+            line++;
+          }
+        }
+        else if(op == 7)
+        {
+          memory[r1] = r2;
+          line++;
+        }
+        else if(op == 8)
+        {
+          cin >> memory[r1];
+          line++;
+        }
+        else if(op == 9)
+        {
+          cout << memory[r1] << endl;
+          line++;
+        }
+        else if(op == 10)
+        {
+          line++;
+          break;
+        }
       }
 
-
-
-
-
-
-
+      cout << "Execution finished" << endl;
 
       file.close();
       return true;
