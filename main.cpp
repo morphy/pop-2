@@ -20,10 +20,12 @@ void clear()
 void help()
 {
   cout << "MW Virtual Machine v1.0" << endl << endl;
-  cout << " ? - display help" << endl;
-  cout << " c xxx.vm - compile xxx.vm file" << endl;
-  cout << " cl - clear screen" << endl;
+  cout << " ?         - display help" << endl;
+  cout << " cl        - clear screen" << endl;
+  cout << " q         - quit application" << endl;
+  cout << " c xxx.vm  - compile xxx.vm file" << endl;
   cout << " e xxx.bin - execute xxx.bin file" << endl;
+  cout << " d xxx.bin - debug xxx.bin file" << endl;
 }
 
 unsigned short reverse(unsigned short x)
@@ -104,7 +106,7 @@ class vm
     }
 
     bool compile(string filename);
-    bool execute(string filename);
+    bool execute(string filename, bool debug);
     char getflag(int x);
 };
 
@@ -296,7 +298,7 @@ bool vm::compile(string filename)
   }
 }
 
-bool vm::execute(string filename)
+bool vm::execute(string filename, bool debug = false)
 {
   /* Reset the VM */
 
@@ -369,18 +371,24 @@ bool vm::execute(string filename)
           memory[r1] += memory[r2];
           flag = getflag(memory[r1]);
           line++;
+
+          if(debug) cout << "Operation: " << op << " R1: " << r1 << " R2: " << r2 << " Line: " << line << endl;
         }
         else if(op == 1)
         {
           memory[r1] -= memory[r2];
           flag = getflag(memory[r1]);
           line++;
+
+          if(debug) cout << "Operation: " << op << " R1: " << r1 << " R2: " << r2 << " Line: " << line << endl;
         }
         else if(op == 2)
         {
           memory[r1] *= memory[r2];
           flag = getflag(memory[r1]);
           line++;
+
+          if(debug) cout << "Operation: " << op << " R1: " << r1 << " R2: " << r2 << " Line: " << line << endl;
         }
         else if(op == 3)
         {
@@ -390,9 +398,12 @@ bool vm::execute(string filename)
             memory[r2] = memory[r1] % memory[r2];
             flag = getflag(memory[commands[i].r1]);
             line++;
+
+            if(debug) cout << "Operation: " << op << " R1: " << r1 << " R2: " << r2 << " Line: " << line << endl;
           }
           else
           {
+            if(debug) cout << "Operation: " << op << " R1: " << r1 << " R2: " << r2 << " Line: " << line << endl;
             cout << "Division by zero detected" << endl << "Execution terminated";
             return false;
           }
@@ -401,11 +412,13 @@ bool vm::execute(string filename)
         {
           flag = getflag(memory[r1] - memory[r2]);
           line++;
+          if(debug) cout << "Operation: " << op << " R1: " << r1 << " R2: " << r2 << " Line: " << line << endl;
         }
         else if(op == 5)
         {
           memory[r1] = memory[r2];
           line++;
+          if(debug) cout << "Operation: " << op << " R1: " << r1 << " R2: " << r2 << " Line: " << line << endl;
         }
         else if(op == 6)
         {
@@ -448,25 +461,35 @@ bool vm::execute(string filename)
           {
             line++;
           }
+
+          if(debug) cout << "Operation: " << op << " R1: " << r1 << " R2: " << r2 << " Line: " << line << endl;
         }
         else if(op == 7)
         {
           memory[r1] = r2;
           line++;
+
+          if(debug) cout << "Operation: " << op << " R1: " << r1 << " R2: " << r2 << " Line: " << line << endl;
         }
         else if(op == 8)
         {
           cin >> memory[r1];
           line++;
+
+          if(debug) cout << "Operation: " << op << " R1: " << r1 << " R2: " << r2 << " Line: " << line << endl;
         }
         else if(op == 9)
         {
           cout << memory[r1] << endl;
           line++;
+
+          if(debug) cout << "Operation: " << op << " R1: " << r1 << " R2: " << r2 << " Line: " << line << endl;
         }
         else if(op == 10)
         {
           line++;
+
+          if(debug) cout << "Operation: " << op << " R1: " << r1 << " R2: " << r2 << " Line: " << line << endl;
           break;
         }
       }
@@ -530,6 +553,12 @@ int main()
       cin >> name;
 
       machine.execute(name);
+    }
+    else if(cmd == "d")
+    {
+      cin >> name;
+
+      machine.execute(name, true);
     }
     else if(cmd == "c")
     {
