@@ -1,0 +1,5 @@
+re 0
+cp 1 0
+mul 0 1
+wr 0
+end

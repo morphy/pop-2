@@ -2,7 +2,7 @@
 #include <string>
 #include <fstream>
 #include <vector>
-//#include <windows.h>
+//#include <windows.h> /* For Windows */
 
 using namespace std;
 
@@ -13,8 +13,8 @@ void welcome()
 
 void clear()
 {
-  //system("cls");
-  cout << "\033[2J\033[1;1H";
+  //system("cls"); /* For Windows */
+  cout << "\033[2J\033[1;1H"; /* For Linux */
 }
 
 void help()
@@ -107,6 +107,7 @@ class vm
 
     bool compile(string filename);
     bool execute(string filename, bool debug);
+    bool validate(string filename);
     char getflag(int x);
 };
 
@@ -146,6 +147,14 @@ bool vm::compile(string filename)
 
   if(ext == ".vm")
   {
+    /* Validate file */
+
+    if(!validate(filename))
+    {
+      cout << "Compilation failed" << endl;
+      return false;
+    }
+
     /* Try to open files */
 
     fstream file_vm, file_bin;
@@ -324,6 +333,11 @@ bool vm::execute(string filename, bool debug = false)
 
     if(file.good())
     {
+      /* Clear screen */
+
+      clear();
+      welcome();
+
       /* Read data */
 
       vector <c> commands;
@@ -510,6 +524,109 @@ bool vm::execute(string filename, bool debug = false)
     cout << "Please provide a valid, .bin format file" << endl;
     return false;
   }
+}
+
+bool vm::validate(string filename)
+{
+  fstream file;
+  string command;
+  int a, b;
+  int line = 0;
+
+  file.open(filename.c_str(), ios::in);
+
+  while(file >> command)
+  {
+    line ++;
+
+    if((command == "add")
+     || (command == "sub")
+     || (command == "mul")
+     || (command == "div")
+     || (command == "com")
+     || (command == "cp"))
+    {
+      if(file >> a >> b)
+      {
+        if(!((a >= 0) && (a <= 63) && (b >= 0) && (b <= 63)))
+        {
+          cout << "Error on line " << line << endl;
+          cout << "Register address must be between 0 and 63" << endl;
+          return false;
+        }
+      }
+      else
+      {
+        cout << "Error on line " << line << endl;
+        cout << "Not a number" << endl;
+        return false;
+      }
+    }
+    else if(command == "jum")
+    {
+      if(file >> a >> b)
+      {
+        if(!((b >= 0) && (b <= 6)))
+        {
+          cout << "Error on line " << line << endl;
+          cout << "Jump mode must be between 0 and 6" << endl;
+          return false;
+        }
+
+      }
+      else
+      {
+        cout << "Error on line " << line << endl;
+        cout << "Not a number or int" << endl;
+        return false;
+      }
+    }
+    else if(command == "con")
+    {
+      if(file >> a >> b)
+      {
+        if(!((a <= 63) && (a >= 0)))
+        {
+          cout << "Error on line " << line << endl;
+          cout << "Register address must be between 0 and 63" << endl;
+          return false;
+        }
+      }
+      else
+      {
+        cout << "Error on line " << line << endl;
+        cout << "Not a number or int" << endl;
+        return false;
+      }
+    }
+    else if((command == "re") || (command == "wr"))
+    {
+      if(file >> a)
+      {
+        if(!((a >= 0) && (a <= 63)))
+        {
+          cout << "Error on line " << line << endl;
+          cout << "Register address must be between 0 and 63" << endl;
+          return false;
+        }
+      }
+      else
+      {
+        cout << "Error on line " << line << endl;
+        cout << "Not a number" << endl;
+        return false;
+      }
+
+    }
+    else if(command != "end")
+    {
+      cout << "Error on line " << line << endl;
+      cout << "Unknown command" << endl;
+      return false;
+    }
+  }
+
+  return true;
 }
 
 int main()
